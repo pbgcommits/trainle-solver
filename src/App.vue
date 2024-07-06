@@ -1,5 +1,7 @@
 <script setup>
 window.g = getShortestPath;
+// window.toggleExactDistances = toggleExactDistances;
+// window.exactDistances = false;
 // import Map from "./components/Map.vue";
 // import HintMap from "./components/HintMap.vue";
 import { stationByName } from "./stations";
@@ -17,6 +19,7 @@ v-app
         span 🚂
       v-sheet.my-5
         .text-body-1 Calculate the distance between two stations.
+          //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
         //- .text-body-1.mt-4 Each guess reveals how many stations to the target, and the distance as the crow flies.
 
         //- .text-body-1.mt-4(v-if="isUnlimited()") Refresh the page to get a new target station.
@@ -39,6 +42,7 @@ v-app
               th Station 2
               th Stops apart
               th Crow flies
+              th Approximate length of train track
 
           tbody.guesses
             tr(v-for="(station1,station2) in [...guesses].reverse()" :key="station1.station")
@@ -50,6 +54,8 @@ v-app
                 .guess {{ actionSymbol(station1.stopDistance) }}&nbsp;{{ station1.stopDistance }} {{ station2.stopDistance === 1 ? 'stop' : 'stops' }}
               td
                 .guess {{ station1.distance }} km
+              td
+                .guess ~ {{ station1.distanceAlongLine }} km
       //- #hint-box
       //- v-expand-transition
       //-   v-card.mt-12.mb-12.bg-blue-lighten-6(v-show="guesses.length && hintBoxShowing && (hints.length || playing)")
@@ -94,6 +100,8 @@ import {
   stationDistance,
   hintForStation,
   stationByName,
+  getDistanceAlongLine,
+  toggleExactDistances
 } from "./stations";
 export default {
   data: () => ({
@@ -207,15 +215,19 @@ export default {
       this.alert = "";
       const stopDistance = getShortestPath(station1, station2).length - 1;
       console.log("Stop distance: " + stopDistance);
-      const distance = Math.round(stationDistance(station1, station2));
+      const d = stationDistance(station1, station2);
+      // const distance = window.exactDistances ? d : Math.round(d);
       console.log("Distance: " + distance);
+      const dal = getDistanceAlongLine(station1, station2);
+      // const distanceAlongLine = window.exactDistances ? dal : Math.round(dal);
       this.guesses.push({
         station1: station1,
         station2: station2,
         station1Up: stationByName(station1).properties.nameUp,
         station2Up: stationByName(station2).properties.nameUp,
         stopDistance,
-        distance,
+        distance: d,
+        distanceAlongLine: dal,
         number: this.guesses.length + 1,
       });
       this.actions.push(this.actionSymbol(stopDistance));
@@ -506,6 +518,7 @@ window.track = ({ id, parameters }) => {
     },
   });
 };
+
 </script>
 <style>
 #hintmap .mapbox-ctrl-attrib-inner {

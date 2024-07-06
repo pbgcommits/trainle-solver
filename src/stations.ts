@@ -198,3 +198,24 @@ export function hintForStation(station, target, hintsLeft) {
   })
   return neighbourStations.join(', ')
 }
+
+/* 
+* This is currently not a bad estimate: however it assumes that the tracks between each station
+* follow a straight line. Ideally, this function would read in all of the coordinates from 
+* the map geojsons which form the train lines to get the most accurate distance.
+*/
+export function getDistanceAlongLine(from: string, to: string) {
+  const path = getShortestPath(from, to);
+  let totalDistance = 0;
+
+  for (let i = 0; i < path.length - 1; i++) {
+    totalDistance += stationDistance(path[i],path[i+1]);
+    // console.log("Distance between " + path[i] + " and " + path[i+1] + ": " + totalDistance);
+  }
+  return totalDistance;
+}
+
+// export function toggleExactDistances() {
+//   window.exactDistances = !window.exactDistances; 
+//   console.log(window.exactDistances)
+// }
