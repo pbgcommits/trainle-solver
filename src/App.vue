@@ -1,7 +1,7 @@
 <script setup>
 window.g = getShortestPath;
-// window.toggleExactDistances = toggleExactDistances;
-// window.exactDistances = false;
+window.toggleExactDistances = toggleExactDistances;
+window.exactDistances = false;
 // import Map from "./components/Map.vue";
 // import HintMap from "./components/HintMap.vue";
 import { stationByName } from "./stations";
@@ -19,7 +19,7 @@ v-app
         span 🚂
       v-sheet.my-5
         .text-body-1 Calculate the distance between two stations.
-          //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
+          v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
         //- .text-body-1.mt-4 Each guess reveals how many stations to the target, and the distance as the crow flies.
 
         //- .text-body-1.mt-4(v-if="isUnlimited()") Refresh the page to get a new target station.

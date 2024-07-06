@@ -215,7 +215,7 @@ export function getDistanceAlongLine(from: string, to: string) {
   return totalDistance;
 }
 
-// export function toggleExactDistances() {
-//   window.exactDistances = !window.exactDistances; 
-//   console.log(window.exactDistances)
-// }
+export function toggleExactDistances() {
+  window.exactDistances = !window.exactDistances; 
+  console.log(window.exactDistances)
+}
