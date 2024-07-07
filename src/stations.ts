@@ -5,6 +5,7 @@ import stations_v1 from './assets/stations_v1.json'
 import stations_v2 from './assets/stations_v2.json'
 const defaultStations = stations_v2
 import { distance } from '@turf/turf'
+import { getCurrentInstance } from 'vue'
 export let stations = defaultStations.features
 
 // Some special cases for json v1
@@ -217,5 +218,5 @@ export function getDistanceAlongLine(from: string, to: string) {
 
 export function toggleExactDistances() {
   window.exactDistances = !window.exactDistances; 
-  console.log(window.exactDistances)
+  // this.data.distancesKey += 1;
 }

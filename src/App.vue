@@ -19,7 +19,7 @@ v-app
         span 🚂
       v-sheet.my-5
         .text-body-1 Calculate the distance between two stations.
-          v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
+          //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
         //- .text-body-1.mt-4 Each guess reveals how many stations to the target, and the distance as the crow flies.
 
         //- .text-body-1.mt-4(v-if="isUnlimited()") Refresh the page to get a new target station.
@@ -42,7 +42,7 @@ v-app
               th Station 2
               th Stops apart
               th Crow flies
-              th Approximate length of train track
+              th Distance along track
 
           tbody.guesses
             tr(v-for="(station1,station2) in [...guesses].reverse()" :key="station1.station")
@@ -52,10 +52,13 @@ v-app
                 .guess-station {{ station1.station2Up }}
               td
                 .guess {{ actionSymbol(station1.stopDistance) }}&nbsp;{{ station1.stopDistance }} {{ station2.stopDistance === 1 ? 'stop' : 'stops' }}
+              // this isn't working :(
+              //- td(:key="window.exactDistances")
               td
-                .guess {{ station1.distance }} km
+                .guess {{ checkIfRounded(station1.distance) }} km
+              //- td(:key="window.exactDistances")
               td
-                .guess ~ {{ station1.distanceAlongLine }} km
+                .guess ~ {{ checkIfRounded(station1.distanceAlongLine) }} km
       //- #hint-box
       //- v-expand-transition
       //-   v-card.mt-12.mb-12.bg-blue-lighten-6(v-show="guesses.length && hintBoxShowing && (hints.length || playing)")
@@ -120,6 +123,7 @@ export default {
     actions: [],
     hintsAllowed: 3,
     hintBoxShowing: false,
+    distancesKey: 0,
   }),
   created() {
     window.app = this;
@@ -217,7 +221,7 @@ export default {
       console.log("Stop distance: " + stopDistance);
       const d = stationDistance(station1, station2);
       // const distance = window.exactDistances ? d : Math.round(d);
-      console.log("Distance: " + distance);
+      // console.log("Distance: " + distance);
       const dal = getDistanceAlongLine(station1, station2);
       // const distanceAlongLine = window.exactDistances ? dal : Math.round(dal);
       this.guesses.push({
@@ -442,6 +446,10 @@ export default {
   },
   watch: {},
 };
+
+function checkIfRounded(num) {
+  return window.exactDistances ? num.toFixed(2) : Math.round(num);
+}
 
 function showConfetti() {
   var defaults = {
