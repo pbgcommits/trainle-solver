@@ -18,74 +18,68 @@ v-app
         //- span(v-else)  \#{{ gameNumber }}
         span 🚂
       v-sheet.my-5
-        .text-body-1 Calculate the distance between two stations.
+        v-radio-group(inline v-model="mode")
+          v-radio(label="Find distance" value="two")
+          v-radio(label="Find station" value="calc")
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
-        //- .text-body-1.mt-4 Each guess reveals how many stations to the target, and the distance as the crow flies.
+      span(v-if="mode==='calc'")
+        .text-body-1 Solve today's trainle!
+        v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="calcStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findStations"  :error-messages="alert3" autofocus)
+        v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="calcStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        v-text-field(class="textbox" label="Crow flies (km)" placeholder="5" v-model="calcCrowFlies" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        v-btn(style="margin: auto; width: 100%" @click="findStations" :disabled="!calcStation || !(calcStopDistance && calcCrowFlies) || win || fail") Find possible stations
+        v-expand-transition
+          v-table(v-if="calcGuesses.length")
+            thead
+              tr
+                th Station 1
+                th Stops apart
+                th Crow flies
+                th Possible stations
 
-        //- .text-body-1.mt-4(v-if="isUnlimited()") Refresh the page to get a new target station.
+            tbody.guesses
+              tr(v-for="(station) in [...calcGuesses].reverse()" :key="station.station")
+                th
+                  .guess-station {{ station.stationUp }}
+                td
+                  .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
+                td
+                  .guess {{ checkIfRounded(station.distance) }} km
+                td
+                  .guess {{ station.possibleStations }}
+      span(v-else)
+        .text-body-1 Calculate the distance between two stations.
+        v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
+        v-text-field(class="textbox" label="Select a second station" placeholder="Flinders Street" v-model="station2" :disabled="win || fail" @keyup="alert2=''" @keyup.enter="makeGuess"  :error-messages="alert2" )
+        v-btn(style="margin: auto; width: 100%" @click="makeGuess" :disabled="!station1 || !station2 || win || fail") Calculate distance
+        //- .breaker
+        //-   br
+        //- a.text-body-2.ml-4.mb-4(v-if="guesses.length && playing" href="#" style="display:block;margin-top:-8px" @click.prevent="needHint" ) Need a hint?
+        v-expand-transition
+          v-table(v-if="guesses.length")
+            thead
+              tr
+                th Station 1
+                th Station 2
+                th Stops apart
+                th Crow flies
+                th Distance along track
 
-      //- div.py-3(v-if="showHintMap" :style="{display:'flex',justifyContent:'center'}")
-      //-   div(v-if=" target" :style="{position:'relative', height:'200px', width: playing ? '200px' : '100%'}")
-      //-     HintMap(:center="stationByName(target).geometry.coordinates" :reveal="win || fail" :target="target")
-      //- v-row(style="display:flex;")
-      v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
-      v-text-field(class="textbox" label="Select a second station" placeholder="Flinders Street" v-model="station2" :disabled="win || fail" @keyup="alert2=''" @keyup.enter="makeGuess"  :error-messages="alert2" )
-      v-btn(style="margin: auto; width: 100%" @click="makeGuess" :disabled="!station1 || !station2 || win || fail") Calculate distance
-      //- .breaker
-      //-   br
-      //- a.text-body-2.ml-4.mb-4(v-if="guesses.length && playing" href="#" style="display:block;margin-top:-8px" @click.prevent="needHint" ) Need a hint?
-      v-expand-transition
-        v-table(v-if="guesses.length")
-          thead
-            tr
-              th Station 1
-              th Station 2
-              th Stops apart
-              th Crow flies
-              th Distance along track
-
-          tbody.guesses
-            tr(v-for="(station1,station2) in [...guesses].reverse()" :key="station1.station")
-              th
-                .guess-station {{ station1.station1Up }}
-              td
-                .guess-station {{ station1.station2Up }}
-              td
-                .guess {{ actionSymbol(station1.stopDistance) }}&nbsp;{{ station1.stopDistance }} {{ station2.stopDistance === 1 ? 'stop' : 'stops' }}
-              // this isn't working :(
-              //- td(:key="window.exactDistances")
-              td
-                .guess {{ checkIfRounded(station1.distance) }} km
-              //- td(:key="window.exactDistances")
-              td
-                .guess ~ {{ checkIfRounded(station1.distanceAlongLine) }} km
-      //- #hint-box
-      //- v-expand-transition
-      //-   v-card.mt-12.mb-12.bg-blue-lighten-6(v-show="guesses.length && hintBoxShowing && (hints.length || playing)")
-      //-     v-card-text
-      //-       v-table.bg-blue-lighten-5(v-if="hints.length" density="compact")
-      //-         tbody
-      //-           tr(v-for="(hint,i) in hints" :key="hint")
-      //-             td Hint&nbsp;{{ i+1 }}
-      //-             td
-      //-               span(style="font-family:Lucida Console,courier new,monospace") {{ hint }}
-
-      //-       p(v-else) Each hint gives you clues about the names of stations near your closest guess.
-      //-     v-card-actions(v-if="playing")
-      //-       v-btn(v-if="hintsLeft > 0 && guesses.length" variant="tonal" @click="hint") Hint ({{ hintsLeft }} left)
-      //-       v-btn.bg-blue-lighten-4(v-if="hintsLeft === 0 && playing" type="submit" @click="giveup") Give up
-
-      //- template(v-if="win || fail")
-      //-   v-card.elevation-8.my-2( style="border: 1px solid hsl(180,0%,70%)" :title="`${win ? 'Yes! ' : ''}The station is ${ titleCase(target)}.`" :class="{ 'bg-green-lighten-5': win, 'bg-red-lighten-5': fail }")
-      //-     v-card-text
-      //-       div(style="display: flex; flex-direction:row")
-      //-         div.pr-2(style="flex-grow: 1" v-html="shareText.replace(/\\n/g,'<br>')")
-      //-         v-btn.my-4.bg-white(@click="copyWin" style="flex-grow:0") Copy
-      //- .map-container(v-if="guesses.length" style="width:100%; height:calc(max(50vh, 200px)); position:relative")
-      //-   Map( :guesses="guesses.map(g=>g.station)" :target="target")
-
-      //- #game-over
-      //- v-btn#restart(v-if="isUnlimited() && (fail || win)" type="submit" @click="restart") Play again
+            tbody.guesses
+              tr(v-for="(station1,station2) in [...guesses].reverse()" :key="station1.station")
+                th
+                  .guess-station {{ station1.station1Up }}
+                td
+                  .guess-station {{ station1.station2Up }}
+                td
+                  .guess {{ actionSymbol(station1.stopDistance) }}&nbsp;{{ station1.stopDistance }} {{ station2.stopDistance === 1 ? 'stop' : 'stops' }}
+                // this isn't working :(
+                //- td(:key="window.exactDistances")
+                td
+                  .guess {{ checkIfRounded(station1.distance) }} km
+                //- td(:key="window.exactDistances")
+                td
+                  .guess ~ {{ checkIfRounded(station1.distanceAlongLine) }} km
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -104,18 +98,25 @@ import {
   hintForStation,
   stationByName,
   getDistanceAlongLine,
-  toggleExactDistances
+  toggleExactDistances,
+  stopDistance as stopDistanceFunc
 } from "./stations";
 export default {
   data: () => ({
     target: null,
     station1: "",
     station2: "",
+    calcStation: "",
+    calcStopDistance: "",
+    calcCrowFlies: "",
     currentGuess: "",
     guesses: [],
+    calcGuesses: [],
     hints: [],
     alert1: "",
     alert2: "",
+    alert3: "",
+    alert4: "",
     win: false,
     fail: false,
     gameNumber: 0,
@@ -124,6 +125,7 @@ export default {
     hintsAllowed: 3,
     hintBoxShowing: false,
     distancesKey: 0,
+    mode: "two"
   }),
   created() {
     window.app = this;
@@ -149,9 +151,7 @@ export default {
       }
     },
     normalizeRawGuess(guess) {
-      console.log('1.5')
       let s = guess.toLowerCase().trim();
-      console.log('1.6')
       s =
         {
           jolimont: "jolimont-mcg",
@@ -165,11 +165,8 @@ export default {
       return stationByName(s)?.properties?.name || s;
     },
     makeGuess() {
-      console.log('1')
       const station1 = this.normalizeRawGuess(this.station1);
-      console.log('2')
       const station2 = this.normalizeRawGuess(this.station2);
-      console.log('3')
       if (station1 === station2) {
         this.alert1 = "You can't find the distance between a station and itself!";
         return;
@@ -241,6 +238,60 @@ export default {
       this.currentGuess = "";
       this.station1 = "";
       this.station2 = "";
+      // this.updateCookie();
+    },
+    findStations() {
+      const station = this.normalizeRawGuess(this.calcStation);
+      console.log('2')
+      if (!stationNames.includes(station)) {
+        window.track({
+          id: "invalid-guess",
+          parameters: { station },
+        });
+        this.alert3 = "Invalid station name!";
+        return;
+      }
+      // Ideally we would only make the user input one of these; however I'm too lazy for now
+      if (!this.calcStopDistance || !this.calcCrowFlies) {
+        // window.track({
+        //   id: "invalid-guess",
+        //   parameters: { calcStopDistance, calcCrowFlies }
+        // });
+        this.alert4 = "Must input the stop distance AND the crow flies distance!";
+        return;
+      }
+      const calcStopDistance = this.calcStopDistance;
+      const calcCrowFlies = this.calcCrowFlies;
+      if (this.guesses.length === 0) {
+        window.track({
+          id: "first-guess",
+          parameters: { station },
+        });
+      }
+      this.alert = "";
+      const possibleStations = []
+      // Brute force it
+      for (const station2 of stationNames) {
+        if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
+          possibleStations.push(station2);
+        }
+      }
+      this.calcGuesses.push({
+        calcStation: station,
+        stationUp: stationByName(station).properties.nameUp,
+        stopDistance: calcStopDistance,
+        distance: calcCrowFlies,
+        possibleStations: possibleStations
+        // number: this.guesses.length + 1,
+      });
+      // this.actions.push(this.actionSymbol(stopDistance));
+      // if (guess === this.target) {
+      //   this.winGame();
+      // }
+      this.currentGuess = "";
+      this.calcStation = "";
+      this.calcCrowFlies = "";
+      this.calcStopDistance = "";
       // this.updateCookie();
     },
     winGame() {
@@ -589,6 +640,8 @@ window.track = ({ id, parameters }) => {
     transform: scale(1);
   }
 }
+
+
 /*
 @keyframes expandIn {
   0% {
