@@ -35,24 +35,20 @@ v-app
                 th Station 1
                 th Stops apart
                 th Crow flies
-                th Possible stations
+                th Possible station
 
             tbody.guesses
               // To get this "working" before, I indexed each station call as station[0]. :)
               //- tr(v-for="(station) in [[...calcGuesses].reverse(), [...calcGuesses].reverse().map(station => station.possibleStations)]" :key="station.station")
               tr(v-for="station in [...calcGuesses].reverse()" :key="station.station")
                 th
-                  .guess-station {{ station.stationUp }}
+                  .guess-station {{ station.guessedStation }}
                 td
-                  .guess {{ actionSymbol(station.possibleStations[0].stopDistance) }}&nbsp;{{ station.possibleStations[0].stopDistance }} {{ station.possibleStations[0].stopDistance === 1 ? 'stop' : 'stops' }}
+                  .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
                 td
-                  .guess {{ checkIfRounded(station.possibleStations[0].crowFlies) }} km
-                // In the future it would be good to have each possible station be its own row.
-                // This would be useful for when I add functionality to only require one of num stops/crow flies.
-                td(v-if="station.possibleStations.length > 0")
-                  .guess {{ station.possibleStations[0].station }}
-                td(v-else)
-                  .guess {{ "No possible stations were found." }}
+                  .guess {{ checkIfRounded(station.crowFlies) }} km
+                td
+                  .guess {{ station.station }}
               //- tr(v-for="(station) in [...calcGuesses].reverse()" :key="station.station")
               //-   th
               //-     .guess-station {{ station.stationUp }}
@@ -298,35 +294,51 @@ export default {
         });
       }
       this.alert = "";
-      const possibleStations = []
+      // const possibleStations = []
       // Brute force it
       for (const station2 of stationNames) {
         switch (infoGiven) {
-          case 3:
+          case 1:
+            if (Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
+              this.calcGuesses.push({
+                guessedStation: stationByName(station).properties.nameUp,
+                station: stationByName(station2).properties.nameUp,
+                stopDistance: stopDistanceFunc(station, station2),
+                crowFlies: calcCrowFlies
+              });
+            }
+          case 2:
+            if (stopDistanceFunc(station, station2) === Number(calcStopDistance)) {
+              this.calcGuesses.push({
+                guessedStation: stationByName(station).properties.nameUp,
+                station: stationByName(station2).properties.nameUp,
+                stopDistance: calcStopDistance,
+                crowFlies: stationDistance(station, station2)
+              });
+            }
+          default:
             if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-              possibleStations.push({
+              this.calcGuesses.push({
+                guessedStation: stationByName(station).properties.nameUp,
                 station: stationByName(station2).properties.nameUp,
                 stopDistance: calcStopDistance,
                 crowFlies: calcCrowFlies
               });
             }
             break;
-          // case 2:
-          //   const a = 1;
-          default:
-            if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-              possibleStations.push(stationByName(station2).properties.nameUp);
-            }
+          // if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
+          //   possibleStations.push(stationByName(station2).properties.nameUp);
+          // }
         }
       }
-      this.calcGuesses.push({
-        calcStation: station,
-        stationUp: stationByName(station).properties.nameUp,
-        stopDistance: calcStopDistance,
-        distance: calcCrowFlies,
-        possibleStations: possibleStations
-        // number: this.guesses.length + 1,
-      });
+      // this.calcGuesses.push({
+      //   calcStation: station,
+      //   stationUp: stationByName(station).properties.nameUp,
+      //   stopDistance: calcStopDistance,
+      //   distance: calcCrowFlies,
+      //   possibleStations: possibleStations
+      //   // number: this.guesses.length + 1,
+      // });
       // this.actions.push(this.actionSymbol(stopDistance));
       // if (guess === this.target) {
       //   this.winGame();
