@@ -27,7 +27,7 @@ v-app
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="calcStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findStations"  :error-messages="alert3" autofocus)
         v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="calcStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
         v-text-field(class="textbox" label="Crow flies (km)" placeholder="5" v-model="calcCrowFlies" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
-        v-btn(style="margin: auto; width: 100%" @click="findStations" :disabled="!calcStation || !(calcStopDistance && calcCrowFlies) || win || fail") Find possible stations
+        v-btn(style="margin: auto; width: 100%" @click="findStations" :disabled="!calcStation || !(calcStopDistance || calcCrowFlies) || win || fail") Find possible stations
         v-expand-transition
           v-table(v-if="calcGuesses.length")
             thead
@@ -253,7 +253,6 @@ export default {
     },
     findStations() {
       const station = this.normalizeRawGuess(this.calcStation);
-      console.log('2')
       if (!stationNames.includes(station)) {
         window.track({
           id: "invalid-guess",
@@ -263,7 +262,7 @@ export default {
         return;
       }
       // Ideally we would only make the user input one of these; however I'm too lazy for now
-      if (!this.calcStopDistance || !this.calcCrowFlies) {
+      if (!this.calcStopDistance && !this.calcCrowFlies) {
         // window.track({
         //   id: "invalid-guess",
         //   parameters: { calcStopDistance, calcCrowFlies }
@@ -271,12 +270,10 @@ export default {
         this.alert4 = "Must input the stop distance AND the crow flies distance!";
         return;
       }
-      if (isNaN(this.calcStopDistance) || isNaN(this.calcCrowFlies)) {
+      if (this.calcStopDistance && isNaN(this.calcStopDistance) || this.calcCrowFlies && isNaN(this.calcCrowFlies)) {
         this.alert4 = "Numbers only!";
         return;
       }
-      const calcStopDistance = this.calcStopDistance;
-      const calcCrowFlies = this.calcCrowFlies;
       let infoGiven = 0;
       if (this.calcStopDistance && this.calcCrowFlies) {
         infoGiven = 3;
@@ -287,6 +284,8 @@ export default {
       else if (this.calcCrowFlies) {
         infoGiven = 1;
       }
+      const calcStopDistance = this.calcStopDistance || "(No data)";
+      const calcCrowFlies = this.calcCrowFlies || "(No data)";
       if (this.guesses.length === 0) {
         window.track({
           id: "first-guess",
@@ -296,6 +295,7 @@ export default {
       this.alert = "";
       // const possibleStations = []
       // Brute force it
+      let validOptionFound = false;
       for (const station2 of stationNames) {
         switch (infoGiven) {
           case 1:
@@ -306,7 +306,9 @@ export default {
                 stopDistance: stopDistanceFunc(station, station2),
                 crowFlies: calcCrowFlies
               });
+              validOptionFound = true;
             }
+            break;
           case 2:
             if (stopDistanceFunc(station, station2) === Number(calcStopDistance)) {
               this.calcGuesses.push({
@@ -315,39 +317,33 @@ export default {
                 stopDistance: calcStopDistance,
                 crowFlies: stationDistance(station, station2)
               });
-            }
-          default:
-            if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-              this.calcGuesses.push({
-                guessedStation: stationByName(station).properties.nameUp,
-                station: stationByName(station2).properties.nameUp,
-                stopDistance: calcStopDistance,
-                crowFlies: calcCrowFlies
-              });
+              validOptionFound = true;
             }
             break;
-          // if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-          //   possibleStations.push(stationByName(station2).properties.nameUp);
-          // }
+          default:
+            if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
+            this.calcGuesses.push({
+              guessedStation: stationByName(station).properties.nameUp,
+              station: stationByName(station2).properties.nameUp,
+              stopDistance: calcStopDistance,
+              crowFlies: calcCrowFlies
+            });
+            validOptionFound = true;
+          }
         }
       }
-      // this.calcGuesses.push({
-      //   calcStation: station,
-      //   stationUp: stationByName(station).properties.nameUp,
-      //   stopDistance: calcStopDistance,
-      //   distance: calcCrowFlies,
-      //   possibleStations: possibleStations
-      //   // number: this.guesses.length + 1,
-      // });
-      // this.actions.push(this.actionSymbol(stopDistance));
-      // if (guess === this.target) {
-      //   this.winGame();
-      // }
+      if (!validOptionFound) {
+        this.calcGuesses.push({
+          guessedStation: stationByName(station).properties.nameUp,
+          station: "No valid stations were found.",
+          stopDistance: calcStopDistance,
+          crowFlies: calcCrowFlies
+        });
+      }
       this.currentGuess = "";
       this.calcStation = "";
       this.calcCrowFlies = "";
       this.calcStopDistance = "";
-      // this.updateCookie();
     },
     winGame() {
       this.win = true;
@@ -554,6 +550,9 @@ export default {
 };
 
 function checkIfRounded(num) {
+  if (isNaN(num)) {
+    return num;
+  }
   return window.exactDistances ? num.toFixed(2) : Math.round(num);
 }
 
