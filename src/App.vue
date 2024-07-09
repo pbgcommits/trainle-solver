@@ -38,15 +38,30 @@ v-app
                 th Possible stations
 
             tbody.guesses
-              tr(v-for="(station) in [...calcGuesses].reverse()" :key="station.station")
+              // To get this "working" before, I indexed each station call as station[0]. :)
+              //- tr(v-for="(station) in [[...calcGuesses].reverse(), [...calcGuesses].reverse().map(station => station.possibleStations)]" :key="station.station")
+              tr(v-for="station in [...calcGuesses].reverse()" :key="station.station")
                 th
                   .guess-station {{ station.stationUp }}
                 td
                   .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
                 td
                   .guess {{ checkIfRounded(station.distance) }} km
-                td
-                  .guess {{ station.possibleStations }}
+                // In the future it would be good to have each possible station be its own row.
+                // This would be useful for when I add functionality to only require one of num stops/crow flies.
+                td(v-if="station.possibleStations.length > 0")
+                  .guess {{ station.possibleStations.toString() }}
+                td(v-else)
+                  .guess {{ "No possible stations were found." }}
+              //- tr(v-for="(station) in [...calcGuesses].reverse()" :key="station.station")
+              //-   th
+              //-     .guess-station {{ station.stationUp }}
+              //-   td
+              //-     .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
+              //-   td
+              //-     .guess {{ checkIfRounded(station.distance) }} km
+              //-   td
+              //-     .guess {{ station.possibleStations }}
       span(v-else)
         .text-body-1 Calculate the distance between two stations.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
@@ -273,7 +288,7 @@ export default {
       // Brute force it
       for (const station2 of stationNames) {
         if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-          possibleStations.push(station2);
+          possibleStations.push(stationByName(station2).properties.nameUp);
         }
       }
       this.calcGuesses.push({
