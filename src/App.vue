@@ -275,7 +275,7 @@ export default {
         this.alert4 = "Must input the stop distance AND the crow flies distance!";
         return;
       }
-      if (!this.calcStopDistance.isNaN() || this.calcCrowFlies.isNan()) {
+      if (isNaN(this.calcStopDistance) || isNaN(this.calcCrowFlies)) {
         this.alert4 = "Numbers only!";
         return;
       }
