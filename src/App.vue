@@ -267,7 +267,7 @@ export default {
         //   id: "invalid-guess",
         //   parameters: { calcStopDistance, calcCrowFlies }
         // });
-        this.alert4 = "Must input the stop distance AND the crow flies distance!";
+        this.alert4 = "Must input at least one of the number of stops or the crow flies distance!";
         return;
       }
       if (this.calcStopDistance && isNaN(this.calcStopDistance) || this.calcCrowFlies && isNaN(this.calcCrowFlies)) {
@@ -293,7 +293,6 @@ export default {
         });
       }
       this.alert = "";
-      // const possibleStations = []
       // Brute force it
       let validOptionFound = false;
       for (const station2 of stationNames) {
