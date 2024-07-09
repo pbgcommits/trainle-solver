@@ -44,13 +44,13 @@ v-app
                 th
                   .guess-station {{ station.stationUp }}
                 td
-                  .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
+                  .guess {{ actionSymbol(station.possibleStations[0].stopDistance) }}&nbsp;{{ station.possibleStations[0].stopDistance }} {{ station.possibleStations[0].stopDistance === 1 ? 'stop' : 'stops' }}
                 td
-                  .guess {{ checkIfRounded(station.distance) }} km
+                  .guess {{ checkIfRounded(station.possibleStations[0].crowFlies) }} km
                 // In the future it would be good to have each possible station be its own row.
                 // This would be useful for when I add functionality to only require one of num stops/crow flies.
                 td(v-if="station.possibleStations.length > 0")
-                  .guess {{ station.possibleStations.toString() }}
+                  .guess {{ station.possibleStations[0].station }}
                 td(v-else)
                   .guess {{ "No possible stations were found." }}
               //- tr(v-for="(station) in [...calcGuesses].reverse()" :key="station.station")
@@ -275,8 +275,22 @@ export default {
         this.alert4 = "Must input the stop distance AND the crow flies distance!";
         return;
       }
+      if (isNaN(this.calcStopDistance) || isNaN(this.calcCrowFlies)) {
+        this.alert4 = "Numbers only!";
+        return;
+      }
       const calcStopDistance = this.calcStopDistance;
       const calcCrowFlies = this.calcCrowFlies;
+      let infoGiven = 0;
+      if (this.calcStopDistance && this.calcCrowFlies) {
+        infoGiven = 3;
+      }
+      else if (this.calcStopDistance) {
+        infoGiven = 2;
+      }
+      else if (this.calcCrowFlies) {
+        infoGiven = 1;
+      }
       if (this.guesses.length === 0) {
         window.track({
           id: "first-guess",
@@ -287,8 +301,22 @@ export default {
       const possibleStations = []
       // Brute force it
       for (const station2 of stationNames) {
-        if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-          possibleStations.push(stationByName(station2).properties.nameUp);
+        switch (infoGiven) {
+          case 3:
+            if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
+              possibleStations.push({
+                station: stationByName(station2).properties.nameUp,
+                stopDistance: calcStopDistance,
+                crowFlies: calcCrowFlies
+              });
+            }
+            break;
+          // case 2:
+          //   const a = 1;
+          default:
+            if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
+              possibleStations.push(stationByName(station2).properties.nameUp);
+            }
         }
       }
       this.calcGuesses.push({
