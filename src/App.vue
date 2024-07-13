@@ -53,7 +53,7 @@ v-app
                   .guess {{ station.station }}
       span(v-else-if="mode==='optimise'")
         .text-body-1 Find the optimal starting station for Trainle!
-        p The table will display the stations and how many non-unique stations it has. For more info, look at the console (right click -> inspect -> console).
+        p The table will display the stations and how many non-unique stations it has. 
         v-text-field(class="textbox" label="(Optional) Max non-unique stations (Default 30)" placeholder="30" v-model="maxLength" @keyup="alert4=''" @keyup.enter="findOptimalStartingPoint"  :error-messages="alert4")
         v-btn(style="margin: auto; width: 100%" @click="findOptimalStartingPoint" ) Find optimal starting point
         v-expand-transition
@@ -62,13 +62,29 @@ v-app
               tr
                 th Station
                 th Number of non-unique stops
+                th Stations that aren't unique
 
             tbody.guesses
               tr(v-for="station in [...Object.keys(optimalStations).sort((a,b) => Object.keys(optimalStations[a]).length - Object.keys(optimalStations[b]).length)]")
-                th
+                td
                   .guess-station {{ station }}
                 td
                   .guess {{ Object.keys(optimalStations[station]).length }}
+                td
+                  v-table 
+                    thead
+                      tr
+                        th Station 
+                        th Stops apart
+                        th Crow flies
+                    tbody.info
+                      tr(v-for="item in [...Object.keys(optimalStations[station])]")
+                        td
+                          .info {{ optimalStations[station][item]["station"] }}
+                        td
+                          .info {{ optimalStations[station][item]["numStops"] }} stops
+                        td
+                          .info {{ optimalStations[station][item]["crowFlies"] }} km
       span(v-else)
         .text-body-1 Calculate the distance between two stations.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
@@ -392,7 +408,7 @@ export default {
                 finale[stationA].push({
                   numStops,
                   crowFlies,
-                  stationB
+                  station: stationByName(stationB).properties.nameUp
                 });
               }
             }
