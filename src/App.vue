@@ -21,9 +21,10 @@ v-app
         v-radio-group(inline v-model="mode")
           v-radio(label="Find distance" value="two")
           v-radio(label="Find station" value="calc")
+          v-radio(label="Determine optimal starting point" value="optimise")
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
       span(v-if="mode==='calc'")
-        .text-body-1 Solve today's trainle! 
+        .text-body-1 Solve today's Trainle! 
           p Enter the distance by train or the distance as the crow flies (or both!) and the Trainle Solver will reveal possible solutions to today's puzzle.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="calcStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findStations"  :error-messages="alert3" autofocus)
         v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="calcStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
@@ -50,15 +51,22 @@ v-app
                   .guess {{ checkIfRounded(station.crowFlies) }} km
                 td
                   .guess {{ station.station }}
-              //- tr(v-for="(station) in [...calcGuesses].reverse()" :key="station.station")
-              //-   th
-              //-     .guess-station {{ station.stationUp }}
-              //-   td
-              //-     .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
-              //-   td
-              //-     .guess {{ checkIfRounded(station.distance) }} km
-              //-   td
-              //-     .guess {{ station.possibleStations }}
+      span(v-else-if="mode==='optimise'")
+        v-text-field(class="textbox" label="(Optional) Max non-unique stations (Default 30)" placeholder="30" v-model="maxLength" @keyup="alert4=''" @keyup.enter="findOptimalStartingPoint"  :error-messages="alert4")
+        v-btn(style="margin: auto; width: 100%" @click="findOptimalStartingPoint" ) Find optimal starting point
+        v-expand-transition
+          v-table(v-if="Object.keys(optimalStations).length")
+            thead
+              tr
+                th Station
+                th Number of non-unique stops
+
+            tbody.guesses
+              tr(v-for="station in [...Object.keys(optimalStations).sort(station => Object.keys(optimalStations[station]).length)]")
+                th
+                  .guess-station {{ station }}
+                td
+                  .guess {{ Object.keys(optimalStations[station]).length }}
       span(v-else)
         .text-body-1 Calculate the distance between two stations.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
@@ -137,7 +145,9 @@ export default {
     hintsAllowed: 3,
     hintBoxShowing: false,
     distancesKey: 0,
-    mode: "two"
+    mode: "two",
+    maxLength: "",
+    optimalStations: {}
   }),
   created() {
     window.app = this;
@@ -344,6 +354,57 @@ export default {
       this.calcStation = "";
       this.calcCrowFlies = "";
       this.calcStopDistance = "";
+    },
+    findOptimalStartingPoint() {
+      const results = {};
+      for (const stationA of stationNames) {
+        for (const stationB of stationNames) {
+          if (stationA === stationB) continue;
+          const numStops = stopDistanceFunc(stationA, stationB);
+          const crowFlies = Math.round(stationDistance(stationA, stationB));
+          if (results[stationA] && results[stationA][numStops] && results[stationA][numStops][crowFlies]) {
+            results[stationA][numStops][crowFlies][stationB] = 1;
+            for (const key2 in results[stationA][numStops][crowFlies]) {
+              if (key2 === stationB) {
+                results[stationA][numStops][crowFlies][key2] += 1;
+              }
+            }
+            continue;
+          };
+          if (!results[stationA]) results[stationA] = {};
+          if (!results[stationA][numStops]) results[stationA][numStops] = {};
+          if (!results[stationA][numStops][crowFlies]) results[stationA][numStops][crowFlies] = {};
+          results[stationA][numStops][crowFlies][stationB] = 1;
+        }
+      }
+      const finale = {};
+      const maxLength = this.maxLength || 30;
+      for (const stationA in results) {
+        for (const numStops in results[stationA]) {
+          for (const crowFlies in results[stationA][numStops]) {
+            if (Object.keys(results[stationA][numStops][crowFlies]).length > 1) {
+              if (!finale[stationA]) {
+                finale[stationA] = [];
+              }
+              for (const stationB in results[stationA][numStops][crowFlies]) {
+                finale[stationA].push({
+                  numStops,
+                  crowFlies,
+                  stationB
+                });
+              }
+            }
+          }
+        }
+        if (finale[stationA].length > maxLength) {
+          delete finale[stationA];
+        }
+      }
+      console.log(finale);
+      for (const station in finale) {
+        this.optimalStations[stationByName(station).properties.nameUp] = finale[station];
+      }
+      return finale;
     },
     winGame() {
       this.win = true;
