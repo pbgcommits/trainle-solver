@@ -52,6 +52,8 @@ v-app
                 td
                   .guess {{ station.station }}
       span(v-else-if="mode==='optimise'")
+        .text-body-1 Find the optimal starting station for Trainle!
+        p The table will display the stations and how many non-unique stations it has. For more info, look at the console (right click -> inspect -> console).
         v-text-field(class="textbox" label="(Optional) Max non-unique stations (Default 30)" placeholder="30" v-model="maxLength" @keyup="alert4=''" @keyup.enter="findOptimalStartingPoint"  :error-messages="alert4")
         v-btn(style="margin: auto; width: 100%" @click="findOptimalStartingPoint" ) Find optimal starting point
         v-expand-transition
