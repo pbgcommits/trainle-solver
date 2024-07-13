@@ -23,7 +23,7 @@ v-app
           v-radio(label="Find station" value="calc")
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
       span(v-if="mode==='calc'")
-        .text-body-1 Solve today's trainle! 
+        .text-body-1 Solve today's Trainle! 
           p Enter the distance by train or the distance as the crow flies (or both!) and the Trainle Solver will reveal possible solutions to today's puzzle.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="calcStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findStations"  :error-messages="alert3" autofocus)
         v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="calcStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
