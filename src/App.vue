@@ -64,7 +64,7 @@ v-app
                 th Number of non-unique stops
 
             tbody.guesses
-              tr(v-for="station in [...Object.keys(optimalStations).sort(station => Object.keys(optimalStations[station]).length)]")
+              tr(v-for="station in [...Object.keys(optimalStations).sort((a,b) => Object.keys(optimalStations[a]).length - Object.keys(optimalStations[b]).length)]")
                 th
                   .guess-station {{ station }}
                 td
