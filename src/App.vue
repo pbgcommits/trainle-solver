@@ -139,7 +139,7 @@ v-app
                 td
                   .guess {{ checkIfRounded(station.crowFlies) }} {{ station.crowFlies === "(No data)" ? "" : "km" }}
                 td
-                  .guess {{ this.hintLines.toString().replaceAll(",", ", ") }}
+                  .guess {{ hintLines.toString().replaceAll(",", ", ") }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
