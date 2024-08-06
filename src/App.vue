@@ -24,7 +24,7 @@ v-app
           v-radio(label="Solve" value="calc")
           v-radio(label="Find distance" value="two")
           v-radio(label="Determine optimal starting point" value="optimise")
-          //- v-btn(style="margin: 10px" @click="resetGuesses") Reset
+          v-btn(style="margin: 10px" @click="resetGuesses") Reset
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
       span(v-if="mode==='calc'")
         .text-body-1 Solve today's Trainle! 
@@ -51,7 +51,7 @@ v-app
                 td
                   .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
                 td
-                  .guess {{ checkIfRounded(station.crowFlies) }} km
+                  .guess {{ checkIfRounded(station.crowFlies) }} {{ station.crowFlies === "(No data)" ? "" : "km" }}
                 td
                   .guess {{ station.station }}
       span(v-else-if="mode==='optimise'")
@@ -144,7 +144,7 @@ v-app
                 td
                   .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
                 td
-                  .guess {{ checkIfRounded(station.crowFlies) }} km
+                  .guess {{ checkIfRounded(station.crowFlies) }} {{ station.crowFlies === "(No data)" ? "" : "km" }}
                 td
                   .guess {{ this.hintLines.toString().replaceAll(",", ", ") }}
     div(style="height:80px")
@@ -184,6 +184,7 @@ export default {
     calcGuesses: [],
     hintGuesses: [],
     hintLines: [],
+    optimalStations: {},
     hints: [],
     alert1: "",
     alert2: "",
@@ -198,8 +199,7 @@ export default {
     hintBoxShowing: false,
     distancesKey: 0,
     mode: "hint",
-    maxLength: "",
-    optimalStations: {}
+    maxLength: ""
   }),
   created() {
     window.app = this;
@@ -422,14 +422,24 @@ export default {
         });
       }
       if (this.mode === "hint") {
-        this.calculateHint();
+        this.calculateHint(infoGiven);
       }
       this.currentGuess = "";
-      stationBox = "";
-      crowFliesBox = "";
-      stopDistanceBox = "";
+      if (this.mode === "calc") {
+        this.calcStation = "";
+        this.calcStopDistance = "";
+        this.calcCrowFlies= "";
+
+      }
+      else if (this.mode === "hint") {
+        this.hintStation = "";
+        this.hintStopDistance = "";
+        this.hintCrowFlies = "";
+
+      }
     },
-    calculateHint() {
+    calculateHint(infoGiven) {
+      this.hintLines = [];
       for (const station of this.hintGuesses) {
         for (const line of station.lines) {
           const upperLine = this.titleCase(line);
@@ -441,6 +451,14 @@ export default {
       }
       // only show one hint
       let guess = this.hintGuesses[0];
+      switch (infoGiven) {
+        case 1:
+          guess.stopDistance = "(No data)";
+          break;
+        case 2:
+          guess.crowFlies = "(No data)";
+          break;
+      }
       this.hintGuesses = [];
       this.hintGuesses.push(guess);
     },
@@ -495,18 +513,23 @@ export default {
       }
       return finale;
     },
-    // resetGuesses() {
-    //   switch (this.mode) {
-    //     case "two":
-    //       break;
-    //     case "calc":
-    //       break;
-    //     case "hint":
-    //       break;
-    //     case "optimise":
-    //       break;
-    //   }
-    // },
+    resetGuesses() {
+      switch (this.mode) {
+        case "two":
+          this.guesses = [];
+          break;
+        case "calc":
+          this.calcGuesses = [];
+          break;
+        case "hint":
+          this.hintGuesses = [];
+          this.hintLines = [];
+          break;
+        case "optimise":
+          this.optimalStations = {};
+          break;
+      }
+    },
     winGame() {
       this.win = true;
       this.actions.push("🎉");
