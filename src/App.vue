@@ -85,7 +85,6 @@ v-app
                         td
                           .info {{ optimalStations[station][item]["crowFlies"] }} km
       span(v-else-if="mode==='two'")
-      span(v-else)
         .text-body-1 Calculate the distance between two stations.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
         v-text-field(class="textbox" label="Select a second station" placeholder="Flinders Street" v-model="station2" :disabled="win || fail" @keyup="alert2=''" @keyup.enter="makeGuess"  :error-messages="alert2" )
@@ -336,7 +335,7 @@ export default {
         return;
       }
       // Ideally we would only make the user input one of these; however I'm too lazy for now
-      if (!this.calcStopDistance && !this.calcCrowFlies) {
+      if (!stopDistanceBox && !crowFliesBox) {
         // window.track({
         //   id: "invalid-guess",
         //   parameters: { calcStopDistance, calcCrowFlies }
@@ -413,7 +412,8 @@ export default {
           guessedStation: stationByName(station).properties.nameUp,
           station: "No valid stations were found.",
           stopDistance: desiredStopDistance,
-          crowFlies: desiredCrowFlies
+          crowFlies: desiredCrowFlies,
+          lines: []
         });
       }
       if (this.mode === "hint") {
@@ -435,17 +435,12 @@ export default {
     },
     calculateHint(infoGiven) {
       this.hintLines = [];
-      for (const station of this.hintGuesses) {
-        for (const line of station.lines) {
-          const upperLine = this.titleCase(line);
-          if (!this.hintLines.includes(upperLine)) {
-            console.log(upperLine)
-            this.hintLines.push(upperLine);
-          }
-        }
-      }
       // only show one hint
       let guess = this.hintGuesses[0];
+      if (guess.lines.length === 0) {
+        console.log("here!!!")
+        this.hintLines[0] = "No possible stations exist."
+      }
       switch (infoGiven) {
         case 1:
           guess.stopDistance = "(No data)";
@@ -456,6 +451,18 @@ export default {
       }
       this.hintGuesses = [];
       this.hintGuesses.push(guess);
+      if (guess.lines.length === 0) {
+        return;
+      }
+      for (const station of this.hintGuesses) {
+        for (const line of station.lines) {
+          const upperLine = this.titleCase(line);
+          if (!this.hintLines.includes(upperLine)) {
+            console.log(upperLine)
+            this.hintLines.push(upperLine);
+          }
+        }
+      }
     },
     findOptimalStartingPoint() {
       const results = {};
