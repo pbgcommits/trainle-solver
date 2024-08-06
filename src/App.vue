@@ -139,7 +139,7 @@ v-app
                 td
                   .guess {{ checkIfRounded(station.crowFlies) }} {{ station.crowFlies === "(No data)" ? "" : "km" }}
                 td
-                  .guess {{ this.hintLines.toString().replaceAll(",", ", ") }}
+                  .guess {{ hintLines.toString().replaceAll(",", ", ") }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -438,7 +438,7 @@ export default {
       // only show one hint
       let guess = this.hintGuesses[0];
       if (guess.lines.length === 0) {
-        console.log("here!!!")
+        console.log("No valid stations!!!")
         this.hintLines[0] = "No possible stations exist."
       }
       switch (infoGiven) {
