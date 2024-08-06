@@ -18,10 +18,13 @@ v-app
         //- span(v-else)  \#{{ gameNumber }}
         span 🚂
       v-sheet.my-5
+      span
         v-radio-group(inline v-model="mode")
+          v-radio(label="Get hint" value="hint")
+          v-radio(label="Solve" value="calc")
           v-radio(label="Find distance" value="two")
-          v-radio(label="Find station" value="calc")
           v-radio(label="Determine optimal starting point" value="optimise")
+          //- v-btn(style="margin: 10px" @click="resetGuesses") Reset
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
       span(v-if="mode==='calc'")
         .text-body-1 Solve today's Trainle! 
@@ -85,7 +88,7 @@ v-app
                           .info {{ optimalStations[station][item]["numStops"] }} stops
                         td
                           .info {{ optimalStations[station][item]["crowFlies"] }} km
-      span(v-else)
+      span(v-else-if="mode==='two'")
         .text-body-1 Calculate the distance between two stations.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
         v-text-field(class="textbox" label="Select a second station" placeholder="Flinders Street" v-model="station2" :disabled="win || fail" @keyup="alert2=''" @keyup.enter="makeGuess"  :error-messages="alert2" )
@@ -118,6 +121,32 @@ v-app
                 //- td(:key="window.exactDistances")
                 td
                   .guess ~ {{ checkIfRounded(station1.distanceAlongLine) }} km
+      span(v-else-if="mode==='hint'")
+        .text-body-1 Get a hint! 
+          p Enter the distance by train or the distance as the crow flies (or both).
+        v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="hintStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findStations"  :error-messages="alert3" autofocus)
+        v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="hintStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        v-text-field(class="textbox" label="Crow flies (km)" placeholder="5" v-model="hintCrowFlies" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        v-btn(style="margin: auto; width: 100%" @click="findStations" :disabled="!hintStation || !(hintStopDistance || hintCrowFlies) || win || fail") Find possible stations
+        v-expand-transition
+          v-table(v-if="hintGuesses.length")
+            thead
+              tr
+                th Station 1
+                th Stops apart
+                th Crow flies
+                th Possible lines
+            // This table should only ever have one row
+            tbody.guesses
+              tr(v-for="station in [...hintGuesses].reverse()" :key="station.station")
+                th
+                  .guess-station {{ station.guessedStation }}
+                td
+                  .guess {{ actionSymbol(station.stopDistance) }}&nbsp;{{ station.stopDistance }} {{ station.stopDistance === 1 ? 'stop' : 'stops' }}
+                td
+                  .guess {{ checkIfRounded(station.crowFlies) }} km
+                td
+                  .guess {{ this.hintLines.toString().replaceAll(",", ", ") }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -147,9 +176,14 @@ export default {
     calcStation: "",
     calcStopDistance: "",
     calcCrowFlies: "",
+    hintStation: "",
+    hintStopDistance: "",
+    hintCrowFlies: "",
     currentGuess: "",
     guesses: [],
     calcGuesses: [],
+    hintGuesses: [],
+    hintLines: [],
     hints: [],
     alert1: "",
     alert2: "",
@@ -163,7 +197,7 @@ export default {
     hintsAllowed: 3,
     hintBoxShowing: false,
     distancesKey: 0,
-    mode: "two",
+    mode: "hint",
     maxLength: "",
     optimalStations: {}
   }),
@@ -281,7 +315,24 @@ export default {
       // this.updateCookie();
     },
     findStations() {
-      const station = this.normalizeRawGuess(this.calcStation);
+      let stationBox;
+      let stopDistanceBox;
+      let crowFliesBox;
+      let infoList;
+      if (this.mode === "calc") {
+        stationBox = this.calcStation;
+        stopDistanceBox = this.calcStopDistance;
+        crowFliesBox = this.calcCrowFlies;
+        infoList = this.calcGuesses;
+      }
+      else {
+        this.hintGuesses = []; // this is to only show one hint at a time
+        stationBox = this.hintStation;
+        stopDistanceBox = this.hintStopDistance;
+        crowFliesBox = this.hintCrowFlies;
+        infoList = this.hintGuesses;
+      }
+      const station = this.normalizeRawGuess(stationBox);
       if (!stationNames.includes(station)) {
         window.track({
           id: "invalid-guess",
@@ -290,8 +341,7 @@ export default {
         this.alert3 = "Invalid station name!";
         return;
       }
-      // Ideally we would only make the user input one of these; however I'm too lazy for now
-      if (!this.calcStopDistance && !this.calcCrowFlies) {
+      if (!stopDistanceBox && !crowFliesBox) {
         // window.track({
         //   id: "invalid-guess",
         //   parameters: { calcStopDistance, calcCrowFlies }
@@ -299,23 +349,23 @@ export default {
         this.alert4 = "Must input at least one of the number of stops or the crow flies distance!";
         return;
       }
-      if (this.calcStopDistance && isNaN(this.calcStopDistance) || this.calcCrowFlies && isNaN(this.calcCrowFlies)) {
+      if (stopDistanceBox && isNaN(stopDistanceBox) || crowFliesBox && isNaN(crowFliesBox)) {
         this.alert4 = "Numbers only!";
         return;
       }
       let infoGiven = 0;
-      if (this.calcStopDistance && this.calcCrowFlies) {
+      if (stopDistanceBox && crowFliesBox) {
         infoGiven = 3;
       }
-      else if (this.calcStopDistance) {
+      else if (stopDistanceBox) {
         infoGiven = 2;
       }
-      else if (this.calcCrowFlies) {
+      else if (crowFliesBox) {
         infoGiven = 1;
       }
-      const calcStopDistance = this.calcStopDistance || "(No data)";
-      const calcCrowFlies = this.calcCrowFlies || "(No data)";
-      if (this.guesses.length === 0) {
+      const desiredStopDistance = stopDistanceBox || "(No data)";
+      const desiredCrowFlies = crowFliesBox || "(No data)";
+      if (infoList.length === 0) {
         window.track({
           id: "first-guess",
           parameters: { station },
@@ -327,51 +377,72 @@ export default {
       for (const station2 of stationNames) {
         switch (infoGiven) {
           case 1:
-            if (Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-              this.calcGuesses.push({
+            if (Math.round(stationDistance(station, station2)) === Number(desiredCrowFlies)) {
+              infoList.push({
                 guessedStation: stationByName(station).properties.nameUp,
                 station: stationByName(station2).properties.nameUp,
                 stopDistance: stopDistanceFunc(station, station2),
-                crowFlies: calcCrowFlies
+                crowFlies: desiredCrowFlies,
+                lines: stationByName(station2).properties.lines
               });
               validOptionFound = true;
             }
             break;
           case 2:
-            if (stopDistanceFunc(station, station2) === Number(calcStopDistance)) {
-              this.calcGuesses.push({
+            if (stopDistanceFunc(station, station2) === Number(desiredStopDistance)) {
+              infoList.push({
                 guessedStation: stationByName(station).properties.nameUp,
                 station: stationByName(station2).properties.nameUp,
-                stopDistance: calcStopDistance,
-                crowFlies: stationDistance(station, station2)
+                stopDistance: desiredStopDistance,
+                crowFlies: stationDistance(station, station2),
+                lines: stationByName(station2).properties.lines
               });
               validOptionFound = true;
             }
             break;
           default:
-            if (stopDistanceFunc(station, station2) === Number(calcStopDistance) && Math.round(stationDistance(station, station2)) === Number(calcCrowFlies)) {
-            this.calcGuesses.push({
+            if (stopDistanceFunc(station, station2) === Number(desiredStopDistance) && Math.round(stationDistance(station, station2)) === Number(desiredCrowFlies)) {
+            infoList.push({
               guessedStation: stationByName(station).properties.nameUp,
               station: stationByName(station2).properties.nameUp,
-              stopDistance: calcStopDistance,
-              crowFlies: calcCrowFlies
+              stopDistance: desiredStopDistance,
+              crowFlies: desiredCrowFlies,
+              lines: stationByName(station2).properties.lines
             });
             validOptionFound = true;
           }
         }
       }
       if (!validOptionFound) {
-        this.calcGuesses.push({
+        infoList.push({
           guessedStation: stationByName(station).properties.nameUp,
           station: "No valid stations were found.",
-          stopDistance: calcStopDistance,
-          crowFlies: calcCrowFlies
+          stopDistance: desiredStopDistance,
+          crowFlies: desiredCrowFlies
         });
       }
+      if (this.mode === "hint") {
+        this.calculateHint();
+      }
       this.currentGuess = "";
-      this.calcStation = "";
-      this.calcCrowFlies = "";
-      this.calcStopDistance = "";
+      stationBox = "";
+      crowFliesBox = "";
+      stopDistanceBox = "";
+    },
+    calculateHint() {
+      for (const station of this.hintGuesses) {
+        for (const line of station.lines) {
+          const upperLine = this.titleCase(line);
+          if (!this.hintLines.includes(upperLine)) {
+            console.log(upperLine)
+            this.hintLines.push(upperLine);
+          }
+        }
+      }
+      // only show one hint
+      let guess = this.hintGuesses[0];
+      this.hintGuesses = [];
+      this.hintGuesses.push(guess);
     },
     findOptimalStartingPoint() {
       const results = {};
@@ -424,6 +495,18 @@ export default {
       }
       return finale;
     },
+    // resetGuesses() {
+    //   switch (this.mode) {
+    //     case "two":
+    //       break;
+    //     case "calc":
+    //       break;
+    //     case "hint":
+    //       break;
+    //     case "optimise":
+    //       break;
+    //   }
+    // },
     winGame() {
       this.win = true;
       this.actions.push("🎉");
