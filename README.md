@@ -13,3 +13,5 @@ Play Trainle: [Trainle](https://trainle.fun/)
 - Calculate distance along train track using coords along train line rather than stations (from trainline.geojson)
 - Fit everything onto the phone screen (avoid horizontal scrolling)
 - Show exact distances?
+- Give the hint a nice animation
+    - Maybe only show one possible line at a time? 
