@@ -120,7 +120,7 @@ v-app
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="hintStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findStations"  :error-messages="alert3" autofocus)
         v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="hintStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
         v-text-field(class="textbox" label="Crow flies (km)" placeholder="5" v-model="hintCrowFlies" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
-        v-btn(style="margin: auto; width: 100%" @click="findStations" :disabled="!hintStation || !(hintStopDistance || hintCrowFlies) || win || fail") Find possible stations
+        v-btn(style="margin: auto; width: 100%" @click="findStations" :disabled="!hintStation || !(hintStopDistance || hintCrowFlies) || win || fail") Get hint
         v-expand-transition
           v-table(v-if="hintGuesses.length")
             thead
@@ -139,7 +139,7 @@ v-app
                 td
                   .guess {{ checkIfRounded(station.crowFlies) }} {{ station.crowFlies === "(No data)" ? "" : "km" }}
                 td
-                  .guess {{ hintLines.toString().replaceAll(",", ", ") }}
+                  .guess {{ this.hintLines.toString().replaceAll(",", ", ") }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -449,11 +449,6 @@ export default {
           guess.crowFlies = "(No data)";
           break;
       }
-      this.hintGuesses = [];
-      this.hintGuesses.push(guess);
-      if (guess.lines.length === 0) {
-        return;
-      }
       for (const station of this.hintGuesses) {
         for (const line of station.lines) {
           const upperLine = this.titleCase(line);
@@ -462,6 +457,11 @@ export default {
             this.hintLines.push(upperLine);
           }
         }
+      }
+      this.hintGuesses = [];
+      this.hintGuesses.push(guess);
+      if (guess.lines.length === 0) {
+        return;
       }
     },
     findOptimalStartingPoint() {
