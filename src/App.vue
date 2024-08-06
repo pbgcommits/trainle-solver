@@ -14,8 +14,6 @@ v-app
     //- .pa3.flex.flex-column(style="font-family:sans-serif; height:100vh; ")
     div(style="flex-grow:1")
       h1.text-h4.text-lg-h2.text-center 🚂 Melbourne Train Station Distance Calculator
-        span(v-if="isUnlimited()")  unlimited
-        //- span(v-else)  \#{{ gameNumber }}
         span 🚂
       v-sheet.my-5
       span
@@ -43,8 +41,6 @@ v-app
                 th Possible station
 
             tbody.guesses
-              // To get this "working" before, I indexed each station call as station[0]. :)
-              //- tr(v-for="(station) in [[...calcGuesses].reverse(), [...calcGuesses].reverse().map(station => station.possibleStations)]" :key="station.station")
               tr(v-for="station in [...calcGuesses].reverse()" :key="station.station")
                 th
                   .guess-station {{ station.guessedStation }}
@@ -89,13 +85,11 @@ v-app
                         td
                           .info {{ optimalStations[station][item]["crowFlies"] }} km
       span(v-else-if="mode==='two'")
+      span(v-else)
         .text-body-1 Calculate the distance between two stations.
         v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="station1" :disabled="win || fail" @keyup="alert1=''" @keyup.enter="makeGuess"  :error-messages="alert1" autofocus)
         v-text-field(class="textbox" label="Select a second station" placeholder="Flinders Street" v-model="station2" :disabled="win || fail" @keyup="alert2=''" @keyup.enter="makeGuess"  :error-messages="alert2" )
         v-btn(style="margin: auto; width: 100%" @click="makeGuess" :disabled="!station1 || !station2 || win || fail") Calculate distance
-        //- .breaker
-        //-   br
-        //- a.text-body-2.ml-4.mb-4(v-if="guesses.length && playing" href="#" style="display:block;margin-top:-8px" @click.prevent="needHint" ) Need a hint?
         v-expand-transition
           v-table(v-if="guesses.length")
             thead
@@ -341,7 +335,8 @@ export default {
         this.alert3 = "Invalid station name!";
         return;
       }
-      if (!stopDistanceBox && !crowFliesBox) {
+      // Ideally we would only make the user input one of these; however I'm too lazy for now
+      if (!this.calcStopDistance && !this.calcCrowFlies) {
         // window.track({
         //   id: "invalid-guess",
         //   parameters: { calcStopDistance, calcCrowFlies }
