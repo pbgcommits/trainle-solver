@@ -23,6 +23,7 @@ v-app
           v-radio(label="Find distance" value="two")
           v-radio(label="Determine optimal starting point" value="optimise")
           v-radio(label="Find games for station" value="game")
+          v-radio(label="Count previous appearances" value="prevGameCount")
           v-btn(style="margin: 10px" @click="resetGuesses") Reset
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
       span(v-if="mode==='calc'")
@@ -159,13 +160,38 @@ v-app
               tr
                 th Station
                 th Game number
-            // This table should only ever have one row
             tbody.guesses
               tr(v-for="game in prevGame")
                 th
                   .guess-station {{ game.station }}
                 td
                   .guess {{ game.gameNumber }}
+      span(v-else-if="mode==='prevGameCount'")
+        .text-body-1 See how many times different stations have appeared!
+          p Enter the station to find the most recent games which had it as the solution.
+        //- v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="prevStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findTimesStationHasBeenAnswer"  :error-messages="alert3" autofocus)
+        span
+          v-radio-group(inline v-model="prevGameCountMode" @click="sortPrevAnswerCounts")
+            v-radio(label="Alphabetical" value="alpha")
+            v-radio(label="Ascending" value="asc")
+            v-radio(label="Descending" value="desc")
+        //- v-text-field(class="textbox" label="Number of previous games" placeholder="1" v-model="prevStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findGame"  :error-messages="alert3" autofocus)
+        //- v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="hintStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        //- v-text-field(class="textbox" label="Crow flies (km)" placeholder="5" v-model="hintCrowFlies" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        v-btn(style="margin: auto; width: 100%" @click="findTimesStationHasBeenAnswer" :disabled="win || fail") Find game
+        v-expand-transition
+          v-table(v-if="this.prevGameCounts.size")
+            thead
+              tr
+                th Station
+                th Game number
+            // This table should only ever have one row
+            tbody.guesses
+              tr(v-for="game in prevGameCounts.keys()")
+                th
+                  .guess-station {{ game }}
+                td
+                  .guess {{ prevGameCounts.get(game) }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -210,6 +236,9 @@ export default {
     prevGame: [],
     prevStation: "",
     prevGameMode: "allGames",
+    // prev game counts data
+    prevGameCounts: new Map(),
+    prevGameCountMode: "alpha",
     alert1: "",
     alert2: "",
     alert3: "",
@@ -551,18 +580,54 @@ export default {
       this.prevGame = []
       let i = this.getGameNumber();
       let station = this.normalizeRawGuess(this.prevStation);
-      while (i > 0) {
+      let upperCaseStation = this.titleCase(station);
+      while (i >= 0) {
         if (targetForGameNumber(i) == station) {
-          this.prevGame.push({"station": station, "gameNumber": i});
+          this.prevGame.push({"station": upperCaseStation, "gameNumber": i});
           this.prevStation = "";
           if (this.prevGameMode == "oneGameOnly") return;
         }
         i--;
       }
       if (!this.prevGame.length) {
-        this.prevGame.push({"station": station, "gameNumber": "This station has never been an answer!"})
+        this.prevGame.push({"station": upperCaseStation, "gameNumber": "This station has never been an answer!"})
         this.prevStation = "";
       }
+    },
+    findTimesStationHasBeenAnswer() {
+      // this.prevGameCounts = {};
+      for (const station of stationNames) {
+        this.prevGameCounts.set(this.titleCase(station),0);
+      }
+      let i = this.getGameNumber();
+      while (i >= 0) {
+        let s = this.titleCase(targetForGameNumber(i));
+        this.prevGameCounts.set(s, this.prevGameCounts.get(s) + 1);
+        i--;
+      }
+      console.log(this.prevGameCounts);
+      this.sortPrevAnswerCounts();
+    },
+    sortPrevAnswerCounts() {
+      if (this.prevGameCounts.keys().length == 0) return;
+      let arr = Array.from(this.prevGameCounts);
+      // console.log(arr);
+      switch (this.prevGameCountMode) {
+        case "asc":
+          arr.sort((a, b) => a[1] - b[1]);
+          this.prevGameCounts = new Map(arr);
+          break;
+        case "desc":
+          arr.sort((a, b) => b[1] - a[1]);
+          this.prevGameCounts = new Map(arr);
+          break;
+        case "alpha":
+        default:
+          arr.sort();
+          console.log(arr);
+          this.prevGameCounts = new Map(arr);
+      }
+      console.log(this.prevGameCounts);
     },
     resetGuesses() {
       switch (this.mode) {
