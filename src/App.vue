@@ -22,6 +22,7 @@ v-app
           v-radio(label="Solve" value="calc")
           v-radio(label="Find distance" value="two")
           v-radio(label="Determine optimal starting point" value="optimise")
+          v-radio(label="Find games for station" value="game")
           v-btn(style="margin: 10px" @click="resetGuesses") Reset
           //- v-btn(style="margin-left:10px" @click="toggleExactDistances") Use precise distances
       span(v-if="mode==='calc'")
@@ -140,6 +141,31 @@ v-app
                   .guess {{ checkIfRounded(station.crowFlies) }} {{ station.crowFlies === "(No data)" ? "" : "km" }}
                 td
                   .guess {{ hintLines.toString().replaceAll(",", ", ") }}
+      span(v-else-if="mode==='game'")
+        .text-body-1 Find a game for a station!
+          p Enter the station to find the most recent games which had it as the solution.
+        v-text-field(class="textbox" label="Select a station" placeholder="Flinders Street" v-model="prevStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findGame"  :error-messages="alert3" autofocus)
+        span
+          v-radio-group(inline v-model="prevGameMode")
+            v-radio(label="All previous games" value="allGames")
+            v-radio(label="Previous game" value="oneGameOnly")
+        //- v-text-field(class="textbox" label="Number of previous games" placeholder="1" v-model="prevStation" :disabled="win || fail" @keyup="alert3=''" @keyup.enter="findGame"  :error-messages="alert3" autofocus)
+        //- v-text-field(class="textbox" label="Number of stops" placeholder="8" v-model="hintStopDistance" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        //- v-text-field(class="textbox" label="Crow flies (km)" placeholder="5" v-model="hintCrowFlies" :disabled="win || fail" @keyup="alert4=''" @keyup.enter="findStations"  :error-messages="alert4")
+        v-btn(style="margin: auto; width: 100%" @click="findGame" :disabled="!prevStation || win || fail") Find game
+        v-expand-transition
+          v-table(v-if="prevGame.length")
+            thead
+              tr
+                th Station
+                th Game number
+            // This table should only ever have one row
+            tbody.guesses
+              tr(v-for="game in prevGame")
+                th
+                  .guess-station {{ game.station }}
+                td
+                  .guess {{ game.gameNumber }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -159,7 +185,8 @@ import {
   stationByName,
   getDistanceAlongLine,
   toggleExactDistances,
-  stopDistance as stopDistanceFunc
+  stopDistance as stopDistanceFunc,
+  // targetForGameNumber
 } from "./stations";
 export default {
   data: () => ({
@@ -179,6 +206,10 @@ export default {
     hintLines: [],
     optimalStations: {},
     hints: [],
+    // prevGame data
+    prevGame: [],
+    prevStation: "",
+    prevGameMode: "allGames",
     alert1: "",
     alert2: "",
     alert3: "",
@@ -514,6 +545,24 @@ export default {
         this.optimalStations[stationByName(station).properties.nameUp] = finale[station];
       }
       return finale;
+    },
+    /** Find the previous game(s) which had this.prevStation as the answer. */
+    findGame() {
+      this.prevGame = []
+      let i = this.getGameNumber();
+      let station = this.normalizeRawGuess(this.prevStation);
+      while (i > 0) {
+        if (targetForGameNumber(i) == station) {
+          this.prevGame.push({"station": station, "gameNumber": i});
+          this.prevStation = "";
+          if (this.prevGameMode == "oneGameOnly") return;
+        }
+        i--;
+      }
+      if (!this.prevGame.length) {
+        this.prevGame.push({"station": station, "gameNumber": "This station has never been an answer!"})
+        this.prevStation = "";
+      }
     },
     resetGuesses() {
       switch (this.mode) {

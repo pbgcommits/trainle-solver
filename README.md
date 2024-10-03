@@ -15,3 +15,4 @@ Play Trainle: [Trainle](https://trainle.fun/)
 - Show exact distances?
 - Give the hint a nice animation
     - Maybe only show one possible line at a time? 
+- Show N/A if there are no optimal stations with that few pairs
