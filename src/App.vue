@@ -187,11 +187,11 @@ v-app
                 th Game number
             // This table should only ever have one row
             tbody.guesses
-              tr(v-for="game in prevGameCounts.keys()")
+              tr(v-for="game in this.prevGameCounts.keys()")
                 th
                   .guess-station {{ game }}
                 td
-                  .guess {{ prevGameCounts.get(game) }}
+                  .guess {{ this.prevGameCounts.get(game) }}
     div(style="height:80px")
     v-bottom-navigation
       v-footer
@@ -580,7 +580,7 @@ export default {
       this.prevGame = []
       let i = this.getGameNumber();
       let station = this.normalizeRawGuess(this.prevStation);
-      let upperCaseStation = this.titleCase(station);
+      let upperCaseStation = stationByName(station).properties.nameUp;
       while (i >= 0) {
         if (targetForGameNumber(i) == station) {
           this.prevGame.push({"station": upperCaseStation, "gameNumber": i});
@@ -597,11 +597,11 @@ export default {
     findTimesStationHasBeenAnswer() {
       // this.prevGameCounts = {};
       for (const station of stationNames) {
-        this.prevGameCounts.set(this.titleCase(station),0);
+        this.prevGameCounts.set(stationByName(station).properties.nameUp,0);
       }
       let i = this.getGameNumber();
       while (i >= 0) {
-        let s = this.titleCase(targetForGameNumber(i));
+        let s = stationByName(targetForGameNumber(i)).properties.nameUp;
         this.prevGameCounts.set(s, this.prevGameCounts.get(s) + 1);
         i--;
       }
