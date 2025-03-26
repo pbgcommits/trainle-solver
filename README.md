@@ -4,6 +4,7 @@ Solve Trainle!
 A project which aims to provide a comprehensive way to access Trainle-related data. Built with VueJS.
 
 Use the Solver: [Trainle Solver](https://pbgcommits.github.io/trainle-calc)
+
 Play Trainle: [Trainle](https://trainle.fun/)
 
 Thanks to [Stevage](https://github.com/stevage/) for creating Trainle. A good percentage of the code for this project is recycled code Stevage wrote for Trainle. This project is not affiliated with or endorsed by Stevage (but I hope he likes it!)
